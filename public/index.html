@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QA Hiện Lên Và Nói</title>
+
+<!-- Font hiện đại -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-dark: #0e0e10;
+    --bg-chat: #1a1a1d;
+    --bg-user: #007aff;
+    --bg-bot: #2a2a2d;
+    --text-light: #eaeaea;
+    --border: #2f2f2f;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at top, #141418, #0e0e10);
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    height: 100vh;
+    padding: 0;
+  }
+
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 95%;
+    max-width: 600px;
+    height: 95vh;
+    background-color: var(--bg-chat);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .user-row {
+    justify-content: flex-end;
+  }
+
+  .message {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    animation: fadeIn 0.3s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    font-size: 15px;
+  }
+
+  .user {
+    background-color: var(--bg-user);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+  }
+
+  .bot {
+    background-color: var(--bg-bot);
+    color: var(--text-light);
+    border-bottom-left-radius: 2px;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    background-color: #1a1a1d;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  }
+
+  .bot-avatar {
+    background-image: url('images/bot.jpg');
+  }
+
+  .user-avatar {
+    background-image: url('images/user.jpg');
+  }
+
+  .input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    background-color: #111114;
+  }
+
+  textarea {
+    flex: 1;
+    background-color: var(--bg-bot);
+    border: 1px solid var(--border);
+    color: var(--text-light);
+    padding: 10px 12px;
+    border-radius: 12px;
+    resize: none;
+    height: 52px;
+    font-size: 15px;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  textarea:focus {
+    border-color: var(--bg-user);
+  }
+
+  button {
+    background-color: var(--bg-user);
+    color: #fff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  button:hover {
+    background-color: #3291ff;
+    transform: scale(1.05);
+  }
+
+  button:active {
+    transform: scale(0.96);
+  }
+
+  .loading {
+    opacity: 0.6;
+    font-style: italic;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Mobile chỉnh kích thước */
+  @media (max-width: 600px) {
+    .chat-container {
+      height: 100vh;
+      border-radius: 0;
+    }
+    .message {
+      font-size: 14px;
+    }
+    textarea {
+      height: 46px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-messages" id="chat"></div>
+
+  <div class="input-area">
+    <textarea id="prompt" placeholder="Hãy sủa vào đây ..."></textarea>
+    <button id="send">Gửi</button>
+  </div>
+</div>
+
+<script>
+const sendBtn = document.getElementById('send');
+const chat = document.getElementById('chat');
+const promptInput = document.getElementById('prompt');
+const model = "gemini-2.5-flash";
+
+function addMessage(text, sender) {
+  const row = document.createElement('div');
+  row.className = `message-row ${sender === 'user' ? 'user-row' : ''}`;
+
+  if (sender === 'bot') {
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar bot-avatar';
+    row.appendChild(avatar);
+  }
+
+  const msg = document.createElement('div');
+  msg.className = `message ${sender}`;
+  msg.textContent = text;
+  row.appendChild(msg);
+
+  if (sender === 'user') {
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar user-avatar';
+    row.appendChild(avatar);
+  }
+
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return msg;
+}
+
+function typeEffect(element, text, speed = 20) {
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      element.textContent += text.charAt(i);
+      chat.scrollTop = chat.scrollHeight;
+      i++;
+    } else {
+      clearInterval(interval);
+    }
+  }, speed);
+}
+
+async function sendMessage() {
+  const prompt = promptInput.value.trim();
+  if (!prompt) return;
+
+  addMessage(prompt, 'user');
+  promptInput.value = '';
+
+  const loadingRow = addMessage('Chờ tao tý, Đang ăn ...', 'bot');
+  loadingRow.classList.add('loading');
+
+  try {
+    const r = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    const json = await r.json();
+    loadingRow.parentElement.remove();
+
+    if (!r.ok) {
+      addMessage('❌ Lỗi: ' + JSON.stringify(json, null, 2), 'bot');
+      return;
+    }
+
+    let text = '';
+    try {
+      const cands = json.candidates;
+      if (Array.isArray(cands) && cands.length) {
+        text = cands.map(c =>
+          (c.content && c.content.parts)
+            ? c.content.parts.map(p => p.text).join('\n')
+            : JSON.stringify(c)
+        ).join('\n---\n');
+      } else {
+        text = JSON.stringify(json, null, 2);
+      }
+    } catch (e) {
+      text = JSON.stringify(json, null, 2);
+    }
+
+    const botMsg = addMessage('', 'bot');
+    typeEffect(botMsg, text, 20);
+
+  } catch (err) {
+    loadingRow.parentElement.remove();
+    addMessage('⚠️ Lỗi fetch: ' + err.message, 'bot');
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+promptInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+</body>
+</html>

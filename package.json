@@ -1,0 +1,23 @@
+{
+  "name": "chat-ai",
+  "version": "1.0.0",
+  "description": "Ứng dụng chat AI sử dụng Gemini API và Node.js + Express",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "keywords": ["chat", "AI", "express", "gemini", "nodejs"],
+  "author": "Huy",
+  "license": "ISC"
+}
